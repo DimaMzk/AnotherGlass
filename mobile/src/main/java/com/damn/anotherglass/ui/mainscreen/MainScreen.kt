@@ -65,6 +65,7 @@ fun MainScreen(
     val context = LocalContext.current
     val isServiceRunning by settings.isServiceRunning.observeAsState(false)
     val hostMode by settings.hostMode.observeAsState()
+    val isMusicExtensionEnabled by settings.isMusicExtensionEnabled.observeAsState(true)
 
     // Use function to make sure it won't build if enum is updated
     @DrawableRes
@@ -131,6 +132,13 @@ fun MainScreen(
                     }
                 }
             }
+
+            // Music Extension Toggle (disabled when service is running)
+            SwitchRow(
+                label = stringResource(id = R.string.lbl_enable_music_extension),
+                checked = isMusicExtensionEnabled,
+                onCheckedChange = { settings.setMusicExtensionEnabled(it) },
+                enabled = !isServiceRunning)
 
             // Service Toggle
             SwitchRow(
@@ -288,6 +296,7 @@ fun DefaultPreview() {
                 override fun setHostMode(mode: Settings.HostMode) = Unit
                 override fun setGPSEnabled(enabled: Boolean) = Unit
                 override fun setNotificationsEnabled(enabled: Boolean) = Unit
+                override fun setMusicExtensionEnabled(enabled: Boolean) = Unit
             },
             object : IServiceController {
                 override val connectedDevice: StateFlow<ConnectedDevice?>

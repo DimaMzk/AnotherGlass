@@ -2,9 +2,11 @@ package com.damn.anotherglass.extensions.notifications
 
 import com.applicaster.xray.core.Logger
 import com.damn.anotherglass.core.GlassService
+import com.damn.anotherglass.core.Settings
 import com.damn.anotherglass.extensions.notifications.filter.FilterAction
 import com.damn.anotherglass.extensions.notifications.filter.NotificationFilterChecker
 import com.damn.anotherglass.extensions.notifications.filter.NotificationHistoryRepository
+import com.damn.anotherglass.shared.music.MusicAPI
 import com.damn.anotherglass.shared.notifications.NotificationData
 import com.damn.anotherglass.shared.notifications.NotificationData.DeliveryMode
 import com.damn.anotherglass.shared.notifications.NotificationsAPI
@@ -20,10 +22,17 @@ class NotificationExtension(private val service: GlassService) {
 
     private val log = Logger.get(TAG)
     private val filterChecker = NotificationFilterChecker(service)
+    private val settings = Settings(service)
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onMessageEvent(event: NotificationEvent) {
         val notificationData = Converter.convert(service, event.action, event.notification)
+
+        // Filter out YouTube Music notifications when music extension is enabled
+        if (settings.isMusicExtensionEnabled && 
+            MusicAPI.YOUTUBE_MUSIC_PACKAGE == notificationData.packageName) {
+            return
+        }
 
         CoroutineScope(Dispatchers.IO).launch {
             val action = filterChecker.filter(notificationData) ?: FilterAction.ALLOW_WITH_NOTIFICATION

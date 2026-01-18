@@ -36,11 +36,13 @@ class CoreController(
     private val _isNotificationsEnabled =
         MutableLiveData(settings.isNotificationsEnabled && NotificationService.isEnabled(activity))
     private val _isGPSEnabled = MutableLiveData(settings.isGPSEnabled)
+    private val _isMusicExtensionEnabled = MutableLiveData(settings.isMusicExtensionEnabled)
 
     override val isServiceRunning: LiveData<Boolean> = _serviceState
     override val hostMode: LiveData<Settings.HostMode> = _hostMode
     override val notificationsEnabled: LiveData<Boolean> = _isNotificationsEnabled
     override val isGPSEnabled: LiveData<Boolean> = _isGPSEnabled
+    override val isMusicExtensionEnabled: LiveData<Boolean> = _isMusicExtensionEnabled
 
     init {
         gpsPermissionLauncher = activity.createGPSPermissionLauncher {
@@ -63,6 +65,7 @@ class CoreController(
             when (key) {
                 Settings.GPS_ENABLED -> _isGPSEnabled.postValue(settings.isGPSEnabled)
                 Settings.NOTIFICATIONS_ENABLED -> syncNotificationsState()
+                Settings.MUSIC_EXTENSION_ENABLED -> _isMusicExtensionEnabled.postValue(settings.isMusicExtensionEnabled)
             }
         }, activity.lifecycle)
     }
@@ -135,6 +138,10 @@ class CoreController(
     override fun setHostMode(mode: Settings.HostMode) {
         settings.hostMode = mode
         _hostMode.postValue(mode)
+    }
+
+    override fun setMusicExtensionEnabled(enabled: Boolean) {
+        settings.isMusicExtensionEnabled = enabled
     }
 
     fun onServiceDisconnected() {
