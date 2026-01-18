@@ -33,6 +33,7 @@ public class MusicCardController extends BroadcastReceiver {
     private Bitmap cachedArt;
     private long syncedPosition;
     private long syncedTimestamp;
+    private String lastTrackKey;
     
     private final Runnable progressRunnable = new Runnable() {
         @Override
@@ -62,6 +63,12 @@ public class MusicCardController extends BroadcastReceiver {
         }
 
         boolean wasPlaying = lastData != null && lastData.isPlaying;
+        
+        // Check if track changed
+        String trackKey = data.artist + "|" + data.track;
+        boolean trackChanged = !trackKey.equals(lastTrackKey);
+        lastTrackKey = trackKey;
+        
         this.lastData = data;
         
         // Sync position from server
@@ -74,6 +81,11 @@ public class MusicCardController extends BroadcastReceiver {
         }
         
         refreshCard();
+        
+        // Focus the card when track changes
+        if (trackChanged && liveCard != null && liveCard.isPublished()) {
+            liveCard.navigate();
+        }
         
         // Start/stop local progress timer based on playback state
         if (data.isPlaying && !wasPlaying) {
