@@ -28,6 +28,7 @@ class MusicExtension(private val service: GlassService) {
     private val handler = Handler(Looper.getMainLooper())
     private var isPlaying = false
     private var lastSentTrack: String? = null
+    private var lastSentArtForTrack: String? = null
 
     private val syncRunnable = object : Runnable {
         override fun run() {
@@ -155,15 +156,19 @@ class MusicExtension(private val service: GlassService) {
         val data = MusicData(artist, track, null, isPlaying, position, duration)
         service.send(RPCMessage(MusicAPI.ID, data))
 
-        // Send album art async only when track changes
+        // Send album art async only when track changes or art wasn't sent yet
         val trackKey = "$artist|$track"
         if (trackKey != lastSentTrack) {
             lastSentTrack = trackKey
-            
+            lastSentArtForTrack = null
+        }
+        
+        if (lastSentArtForTrack != trackKey) {
             val bitmap = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                 ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             
             if (bitmap != null) {
+                lastSentArtForTrack = trackKey
                 thread {
                     try {
                         // First: send small 32x32 thumbnail quickly
