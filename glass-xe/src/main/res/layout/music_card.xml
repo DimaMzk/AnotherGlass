@@ -2,31 +2,31 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@color/music_card_background"
     android:padding="12dp">
 
     <ImageView
         android:id="@+id/album_art"
         android:layout_width="124dp"
         android:layout_height="124dp"
-        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
         android:scaleType="fitCenter"
-        android:background="#222222" />
+        android:background="@color/music_card_album_art_bg" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/album_art"
+        android:layout_toEndOf="@id/album_art"
         android:layout_centerVertical="true"
-        android:layout_marginLeft="24dp"
+        android:layout_marginStart="24dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/track_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/music_card_title"
             android:textSize="32sp"
             android:maxLines="2"
             android:ellipsize="end" />
@@ -35,7 +35,7 @@
             android:id="@+id/artist"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#AAAAAA"
+            android:textColor="@color/music_card_artist"
             android:textSize="24sp"
             android:layout_marginTop="8dp"
             android:maxLines="1"
@@ -45,7 +45,7 @@
             android:id="@+id/progress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#888888"
+            android:textColor="@color/music_card_progress"
             android:textSize="20sp"
             android:layout_marginTop="8dp" />
 

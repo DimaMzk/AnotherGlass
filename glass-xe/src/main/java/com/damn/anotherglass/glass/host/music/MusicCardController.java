@@ -55,6 +55,9 @@ public class MusicCardController extends BroadcastReceiver {
     public void update(MusicData data) {
         // If this is an art-only update, just cache the art and refresh
         if (data.track == null && data.albumArt != null) {
+            if (cachedArt != null) {
+                cachedArt.recycle();
+            }
             cachedArt = BitmapFactory.decodeByteArray(data.albumArt, 0, data.albumArt.length);
             if (lastData != null) {
                 refreshCard();
@@ -65,7 +68,7 @@ public class MusicCardController extends BroadcastReceiver {
         boolean wasPlaying = lastData != null && lastData.isPlaying;
         
         // Check if track changed
-        String trackKey = data.artist + "|" + data.track;
+        String trackKey = (data.artist != null ? data.artist : "") + "|" + (data.track != null ? data.track : "");
         boolean trackChanged = !trackKey.equals(lastTrackKey);
         lastTrackKey = trackKey;
         
@@ -77,6 +80,9 @@ public class MusicCardController extends BroadcastReceiver {
         
         // Update cached art if included
         if (data.albumArt != null && data.albumArt.length > 0) {
+            if (cachedArt != null) {
+                cachedArt.recycle();
+            }
             cachedArt = BitmapFactory.decodeByteArray(data.albumArt, 0, data.albumArt.length);
         }
         
@@ -175,14 +181,8 @@ public class MusicCardController extends BroadcastReceiver {
             else if ("Previous".equals(action)) control = MusicControl.Previous;
 
             if (control != null) {
+                // Send control command to host; UI will be updated when new MusicData arrives
                 rpcClient.send(new RPCMessage(MusicAPI.ID, control));
-                // Optimistically update UI?
-                if (lastData != null) {
-                    if (control == MusicControl.Play) lastData.isPlaying = true;
-                    if (control == MusicControl.Pause) lastData.isPlaying = false;
-                    // For next/prev we can't guess.
-                    update(lastData);
-                }
             }
         }
     }

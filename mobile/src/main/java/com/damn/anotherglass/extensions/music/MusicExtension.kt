@@ -26,9 +26,9 @@ class MusicExtension(private val service: GlassService) {
     private var mediaSessionManager: MediaSessionManager? = null
     private var currentController: MediaController? = null
     private val handler = Handler(Looper.getMainLooper())
-    private var isPlaying = false
-    private var lastSentTrack: String? = null
-    private var lastSentArtForTrack: String? = null
+    @Volatile private var isPlaying = false
+    @Volatile private var lastSentTrack: String? = null
+    @Volatile private var lastSentArtForTrack: String? = null
 
     private val syncRunnable = object : Runnable {
         override fun run() {
@@ -123,7 +123,7 @@ class MusicExtension(private val service: GlassService) {
             if (currentController?.sessionToken != ytMusicController.sessionToken) {
                 currentController?.unregisterCallback(callback)
                 currentController = ytMusicController
-                currentController?.registerCallback(callback, android.os.Handler(service.mainLooper))
+                currentController?.registerCallback(callback, handler)
                 sendUpdate()
                 log.d(TAG).message("Locked onto YouTube Music session")
             }
@@ -158,7 +158,10 @@ class MusicExtension(private val service: GlassService) {
         service.send(RPCMessage(MusicAPI.ID, data))
 
         // Send album art async only when track changes or art wasn't sent yet
-        val trackKey = "$artist|$track"
+        val safeArtist = artist ?: ""
+        val safeTrack = track ?: ""
+        val trackKey = "$safeArtist|$safeTrack"
+        
         if (trackKey != lastSentTrack) {
             lastSentTrack = trackKey
             lastSentArtForTrack = null

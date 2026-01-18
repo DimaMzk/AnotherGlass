@@ -50,7 +50,7 @@ class Settings(context: Context) {
         set(enabled) = preferences.edit { putBoolean(NOTIFICATIONS_ENABLED, enabled) }
 
     var isMusicExtensionEnabled: Boolean
-        get() = preferences.getBoolean(MUSIC_EXTENSION_ENABLED, true)
+        get() = preferences.getBoolean(MUSIC_EXTENSION_ENABLED, false)
         set(enabled) = preferences.edit { putBoolean(MUSIC_EXTENSION_ENABLED, enabled) }
 
     var hostMode: HostMode
