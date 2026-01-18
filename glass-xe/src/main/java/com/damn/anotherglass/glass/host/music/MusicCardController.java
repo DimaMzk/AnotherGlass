@@ -5,16 +5,18 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.widget.RemoteViews;
 
 import com.damn.anotherglass.glass.host.HostService;
+import com.damn.anotherglass.glass.host.R;
 import com.damn.anotherglass.shared.music.MusicAPI;
 import com.damn.anotherglass.shared.music.MusicControl;
 import com.damn.anotherglass.shared.music.MusicData;
 import com.damn.anotherglass.shared.rpc.IRPCClient;
 import com.damn.anotherglass.shared.rpc.RPCMessage;
 import com.google.android.glass.timeline.LiveCard;
-import com.google.android.glass.widget.CardBuilder;
 
 public class MusicCardController extends BroadcastReceiver {
 
@@ -23,6 +25,7 @@ public class MusicCardController extends BroadcastReceiver {
     private final IRPCClient rpcClient;
     private LiveCard liveCard;
     private MusicData lastData;
+    private Bitmap cachedArt;
 
     public MusicCardController(HostService service, IRPCClient rpcClient) {
         this.service = service;
@@ -32,34 +35,64 @@ public class MusicCardController extends BroadcastReceiver {
     }
 
     public void update(MusicData data) {
+        // If this is an art-only update, just cache the art and refresh
+        if (data.track == null && data.albumArt != null) {
+            cachedArt = BitmapFactory.decodeByteArray(data.albumArt, 0, data.albumArt.length);
+            if (lastData != null) {
+                refreshCard();
+            }
+            return;
+        }
+
         this.lastData = data;
+        
+        // Update cached art if included
+        if (data.albumArt != null && data.albumArt.length > 0) {
+            cachedArt = BitmapFactory.decodeByteArray(data.albumArt, 0, data.albumArt.length);
+        }
+        
+        refreshCard();
+    }
+
+    private void refreshCard() {
+        if (lastData == null) return;
+        
         if (liveCard == null) {
             liveCard = new LiveCard(service, CARD_TAG);
         }
 
-        CardBuilder builder = new CardBuilder(service, CardBuilder.Layout.CAPTION);
+        RemoteViews views = new RemoteViews(service.getPackageName(), R.layout.music_card);
         
-        String trackText = data.track != null ? data.track : "Unknown Track";
-        if (data.duration > 0) {
-            String progress = formatTime(data.position) + " / " + formatTime(data.duration);
-            trackText += "\n" + progress;
+        // Set album art (fixed 88dp x 88dp in layout)
+        if (cachedArt != null) {
+            views.setImageViewBitmap(R.id.album_art, cachedArt);
         }
         
-        builder.setText(trackText);
-        builder.setFootnote(data.artist != null ? data.artist : "Unknown Artist");
+        // Set track title
+        String trackText = lastData.track != null ? lastData.track : "Unknown Track";
+        views.setTextViewText(R.id.track_title, trackText);
+        
+        // Set artist
+        String artistText = lastData.artist != null ? lastData.artist : "Unknown Artist";
+        views.setTextViewText(R.id.artist, artistText);
+        
+        // Set progress
+        if (lastData.duration > 0) {
+            String progress = formatTime(lastData.position) + " / " + formatTime(lastData.duration);
+            views.setTextViewText(R.id.progress, progress);
+        } else {
+            views.setTextViewText(R.id.progress, "");
+        }
 
-        RemoteViews views = builder.getRemoteViews();
         liveCard.setViews(views);
 
         Intent menuIntent = new Intent(service, MusicMenuActivity.class);
-        menuIntent.putExtra(MusicMenuActivity.EXTRA_IS_PLAYING, data.isPlaying);
+        menuIntent.putExtra(MusicMenuActivity.EXTRA_IS_PLAYING, lastData.isPlaying);
         
         liveCard.setAction(PendingIntent.getActivity(service, 0, menuIntent, PendingIntent.FLAG_UPDATE_CURRENT));
 
         if (!liveCard.isPublished()) {
             liveCard.publish(LiveCard.PublishMode.REVEAL);
-        } else {
-            // liveCard.navigate();
         }
     }
 
@@ -80,6 +113,7 @@ public class MusicCardController extends BroadcastReceiver {
             liveCard.unpublish();
         }
         liveCard = null;
+        cachedArt = null;
     }
 
     @Override
