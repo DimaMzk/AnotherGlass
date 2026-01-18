@@ -3,7 +3,7 @@
     <item
         android:id="@+id/action_play_pause"
         android:icon="@android:drawable/ic_media_play"
-        android:title="Pause" />
+        android:title="Play/Pause" />
     <item
         android:id="@+id/action_next"
         android:icon="@android:drawable/ic_media_next"

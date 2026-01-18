@@ -18,7 +18,8 @@ import com.damn.anotherglass.shared.music.MusicControl
 import com.damn.anotherglass.shared.music.MusicData
 import com.damn.anotherglass.shared.rpc.RPCMessage
 import java.io.ByteArrayOutputStream
-import kotlin.concurrent.thread
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 
 class MusicExtension(private val service: GlassService) {
 
@@ -26,6 +27,8 @@ class MusicExtension(private val service: GlassService) {
     private var mediaSessionManager: MediaSessionManager? = null
     private var currentController: MediaController? = null
     private val handler = Handler(Looper.getMainLooper())
+    private val albumArtExecutor = Executors.newSingleThreadExecutor()
+    private var pendingArtUpdate: Future<*>? = null
     @Volatile private var isPlaying = false
     @Volatile private var lastSentTrack: String? = null
     @Volatile private var lastSentArtForTrack: String? = null
@@ -92,10 +95,14 @@ class MusicExtension(private val service: GlassService) {
     fun stop() {
         try {
             handler.removeCallbacks(syncRunnable)
+            pendingArtUpdate?.cancel(true)
+            albumArtExecutor.shutdownNow()
             mediaSessionManager?.removeOnActiveSessionsChangedListener(sessionsListener)
             currentController?.unregisterCallback(callback)
             currentController = null
             isPlaying = false
+            lastSentTrack = null
+            lastSentArtForTrack = null
             log.i(TAG).message("MusicExtension stopped")
         } catch (e: Exception) {
             log.e(TAG).exception(e).message("Error stopping MusicExtension")
@@ -121,6 +128,8 @@ class MusicExtension(private val service: GlassService) {
 
         if (ytMusicController != null) {
             if (currentController?.sessionToken != ytMusicController.sessionToken) {
+                handler.removeCallbacks(syncRunnable)
+                pendingArtUpdate?.cancel(true)
                 currentController?.unregisterCallback(callback)
                 currentController = ytMusicController
                 currentController?.registerCallback(callback, handler)
@@ -143,62 +152,89 @@ class MusicExtension(private val service: GlassService) {
         val artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST)
         val track = metadata.getString(MediaMetadata.METADATA_KEY_TITLE)
         val duration = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION)
-        isPlaying = playbackState?.state == PlaybackState.STATE_PLAYING
+        val playing = playbackState?.state == PlaybackState.STATE_PLAYING
+        isPlaying = playing
 
         // Calculate current position accounting for time elapsed since last update
+        // The position from playbackState is the position at lastPositionUpdateTime
+        // We add elapsed time * playback speed to estimate current position
         var position = playbackState?.position ?: 0L
-        if (isPlaying && playbackState != null) {
+        if (playing && playbackState != null) {
             val timeDelta = SystemClock.elapsedRealtime() - playbackState.lastPositionUpdateTime
             val speed = playbackState.playbackSpeed
             position += (timeDelta * speed).toLong()
         }
 
         // Send track info immediately (no art)
-        val data = MusicData(artist, track, null, isPlaying, position, duration)
+        val data = MusicData(artist, track, null, playing, position, duration)
         service.send(RPCMessage(MusicAPI.ID, data))
 
         // Send album art async only when track changes or art wasn't sent yet
-        val safeArtist = artist ?: ""
-        val safeTrack = track ?: ""
-        val trackKey = "$safeArtist|$safeTrack"
+        val artistOrEmpty = artist ?: ""
+        val trackOrEmpty = track ?: ""
+        val trackKey = "$artistOrEmpty|$trackOrEmpty"
         
-        if (trackKey != lastSentTrack) {
-            lastSentTrack = trackKey
-            lastSentArtForTrack = null
-        }
-        
-        if (lastSentArtForTrack != trackKey) {
-            val bitmap = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
+        synchronized(this) {
+            if (trackKey != lastSentTrack) {
+                lastSentTrack = trackKey
+                lastSentArtForTrack = null
+                pendingArtUpdate?.cancel(true)
+            }
             
-            if (bitmap != null) {
-                lastSentArtForTrack = trackKey
-                val currentPlaying = isPlaying
-                thread {
-                    var smallScaled: Bitmap? = null
-                    var scaled: Bitmap? = null
-                    try {
-                        // Send small 32x32 thumbnail first for instant feedback
-                        smallScaled = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
-                        ByteArrayOutputStream().use { smallStream ->
-                            smallScaled.compress(Bitmap.CompressFormat.JPEG, 80, smallStream)
-                            val smallArtBytes = smallStream.toByteArray()
-                            service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, smallArtBytes, currentPlaying, 0, 0)))
-                        }
-                        
-                        // Then send full 128x128 image
-                        scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true)
-                        ByteArrayOutputStream().use { stream ->
-                            scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
-                            val artBytes = stream.toByteArray()
-                            service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, artBytes, currentPlaying, 0, 0)))
-                            log.d(TAG).message("Sent album art: ${artBytes.size} bytes")
-                        }
+            if (lastSentArtForTrack != trackKey) {
+                val bitmap = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                    ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
+                
+                if (bitmap != null) {
+                    lastSentArtForTrack = trackKey
+                    val currentPlaying = playing
+                    
+                    // Create defensive copy to avoid using framework-owned bitmap across threads
+                    val safeConfig = bitmap.config ?: Bitmap.Config.ARGB_8888
+                    val albumArtBitmap = try {
+                        bitmap.copy(safeConfig, false)
                     } catch (e: Exception) {
-                        log.e(TAG).exception(e).message("Failed to send album art")
-                    } finally {
-                        smallScaled?.recycle()
-                        scaled?.recycle()
+                        log.e(TAG).exception(e).message("Failed to copy album art bitmap")
+                        null
+                    }
+                    
+                    if (albumArtBitmap != null) {
+                        pendingArtUpdate = albumArtExecutor.submit {
+                            var smallScaled: Bitmap? = null
+                            var scaled: Bitmap? = null
+                            try {
+                                // Send small 32x32 thumbnail first for instant feedback
+                                smallScaled = Bitmap.createScaledBitmap(albumArtBitmap, 32, 32, true)
+                                ByteArrayOutputStream().use { smallStream ->
+                                    smallScaled.compress(Bitmap.CompressFormat.JPEG, 80, smallStream)
+                                    val smallArtBytes = smallStream.toByteArray()
+                                    val artData = MusicData()
+                                    artData.albumArt = smallArtBytes
+                                    artData.isPlaying = currentPlaying
+                                    artData.timestamp = System.currentTimeMillis()
+                                    service.send(RPCMessage(MusicAPI.ID, artData))
+                                }
+                                
+                                // Then send full 128x128 image
+                                scaled = Bitmap.createScaledBitmap(albumArtBitmap, 128, 128, true)
+                                ByteArrayOutputStream().use { stream ->
+                                    scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+                                    val artBytes = stream.toByteArray()
+                                    val artData = MusicData()
+                                    artData.albumArt = artBytes
+                                    artData.isPlaying = currentPlaying
+                                    artData.timestamp = System.currentTimeMillis()
+                                    service.send(RPCMessage(MusicAPI.ID, artData))
+                                    log.d(TAG).message("Sent album art: ${artBytes.size} bytes")
+                                }
+                            } catch (e: Exception) {
+                                log.e(TAG).exception(e).message("Failed to send album art")
+                            } finally {
+                                smallScaled?.recycle()
+                                scaled?.recycle()
+                                albumArtBitmap.recycle()
+                            }
+                        }
                     }
                 }
             }
