@@ -95,7 +95,7 @@ class GlassService
                 mConnectedDevice.value = mConnectedDeviceData
                 if (mSettings.isGPSEnabled) mGPS.start()
                 if (mSettings.isNotificationsEnabled) mNotifications.start()
-                mMusic.start()
+                if (mSettings.isMusicExtensionEnabled) mMusic.start()
             }
 
             override fun onDataReceived(data: RPCMessage) {

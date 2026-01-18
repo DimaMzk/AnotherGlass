@@ -2,6 +2,7 @@ package com.damn.anotherglass.extensions.notifications
 
 import com.applicaster.xray.core.Logger
 import com.damn.anotherglass.core.GlassService
+import com.damn.anotherglass.core.Settings
 import com.damn.anotherglass.extensions.notifications.filter.FilterAction
 import com.damn.anotherglass.extensions.notifications.filter.NotificationFilterChecker
 import com.damn.anotherglass.extensions.notifications.filter.NotificationHistoryRepository
@@ -20,13 +21,15 @@ class NotificationExtension(private val service: GlassService) {
 
     private val log = Logger.get(TAG)
     private val filterChecker = NotificationFilterChecker(service)
+    private val settings = Settings(service)
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onMessageEvent(event: NotificationEvent) {
         val notificationData = Converter.convert(service, event.action, event.notification)
 
-        // Filter out YouTube Music notifications to avoid duplication
-        if ("com.google.android.apps.youtube.music" == notificationData.packageName) {
+        // Filter out YouTube Music notifications when music extension is enabled
+        if (settings.isMusicExtensionEnabled && 
+            "com.google.android.apps.youtube.music" == notificationData.packageName) {
             return
         }
 

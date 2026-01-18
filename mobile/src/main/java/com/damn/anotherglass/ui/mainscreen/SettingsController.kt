@@ -9,9 +9,11 @@ abstract class SettingsController {
     open val hostMode: LiveData<Settings.HostMode> = MutableLiveData(Settings.HostMode.WiFi)
     open val notificationsEnabled: LiveData<Boolean> = MutableLiveData(true)
     open val isGPSEnabled: LiveData<Boolean> = MutableLiveData(true)
+    open val isMusicExtensionEnabled: LiveData<Boolean> = MutableLiveData(true)
 
     abstract fun setServiceRunning(checked: Boolean)
     abstract fun setHostMode(mode: Settings.HostMode)
     abstract fun setGPSEnabled(enabled: Boolean)
     abstract fun setNotificationsEnabled(enabled: Boolean)
+    abstract fun setMusicExtensionEnabled(enabled: Boolean)
 }
