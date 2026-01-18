@@ -105,7 +105,7 @@ public class MusicCardController extends BroadcastReceiver {
 
         RemoteViews views = new RemoteViews(service.getPackageName(), R.layout.music_card);
         
-        // Set album art (fixed 88dp x 88dp in layout)
+        // Set album art (fixed 124dp x 124dp in layout)
         if (cachedArt != null) {
             views.setImageViewBitmap(R.id.album_art, cachedArt);
         }
@@ -147,7 +147,7 @@ public class MusicCardController extends BroadcastReceiver {
         long totalSeconds = ms / 1000;
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
-        return String.format("%d:%02d", minutes, seconds);
+        return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds);
     }
 
     public void remove() {

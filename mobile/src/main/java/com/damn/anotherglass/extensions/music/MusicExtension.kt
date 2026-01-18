@@ -103,20 +103,21 @@ class MusicExtension(private val service: GlassService) {
     }
 
     fun onMessage(payload: Any?) {
-        if (payload is MusicControl && currentController != null) {
-            val controls = currentController?.transportControls
+        if (payload is MusicControl) {
+            val controller = currentController ?: return
+            val controls = controller.transportControls ?: return
             when (payload) {
-                MusicControl.Play -> controls?.play()
-                MusicControl.Pause -> controls?.pause()
-                MusicControl.Next -> controls?.skipToNext()
-                MusicControl.Previous -> controls?.skipToPrevious()
+                MusicControl.Play -> controls.play()
+                MusicControl.Pause -> controls.pause()
+                MusicControl.Next -> controls.skipToNext()
+                MusicControl.Previous -> controls.skipToPrevious()
             }
         }
     }
 
     private fun updateController(controllers: List<MediaController>?) {
         // Find YouTube Music controller
-        val ytMusicController = controllers?.find { it.packageName == "com.google.android.apps.youtube.music" }
+        val ytMusicController = controllers?.find { it.packageName == MusicAPI.YOUTUBE_MUSIC_PACKAGE }
 
         if (ytMusicController != null) {
             if (currentController?.sessionToken != ytMusicController.sessionToken) {
@@ -169,24 +170,32 @@ class MusicExtension(private val service: GlassService) {
             
             if (bitmap != null) {
                 lastSentArtForTrack = trackKey
+                val currentPlaying = isPlaying
                 thread {
+                    var smallScaled: Bitmap? = null
+                    var scaled: Bitmap? = null
                     try {
                         // Send small 32x32 thumbnail first for instant feedback
-                        val smallStream = ByteArrayOutputStream()
-                        val smallScaled = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
-                        smallScaled.compress(Bitmap.CompressFormat.JPEG, 80, smallStream)
-                        val smallArtBytes = smallStream.toByteArray()
-                        service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, smallArtBytes, isPlaying, 0, 0)))
+                        smallScaled = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
+                        ByteArrayOutputStream().use { smallStream ->
+                            smallScaled.compress(Bitmap.CompressFormat.JPEG, 80, smallStream)
+                            val smallArtBytes = smallStream.toByteArray()
+                            service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, smallArtBytes, currentPlaying, 0, 0)))
+                        }
                         
                         // Then send full 128x128 image
-                        val stream = ByteArrayOutputStream()
-                        val scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true)
-                        scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
-                        val artBytes = stream.toByteArray()
-                        service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, artBytes, isPlaying, 0, 0)))
-                        log.d(TAG).message("Sent album art: ${smallArtBytes.size} + ${artBytes.size} bytes")
+                        scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true)
+                        ByteArrayOutputStream().use { stream ->
+                            scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
+                            val artBytes = stream.toByteArray()
+                            service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, artBytes, currentPlaying, 0, 0)))
+                            log.d(TAG).message("Sent album art: ${artBytes.size} bytes")
+                        }
                     } catch (e: Exception) {
                         log.e(TAG).exception(e).message("Failed to send album art")
+                    } finally {
+                        smallScaled?.recycle()
+                        scaled?.recycle()
                     }
                 }
             }

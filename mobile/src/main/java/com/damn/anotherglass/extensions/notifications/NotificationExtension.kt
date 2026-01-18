@@ -6,6 +6,7 @@ import com.damn.anotherglass.core.Settings
 import com.damn.anotherglass.extensions.notifications.filter.FilterAction
 import com.damn.anotherglass.extensions.notifications.filter.NotificationFilterChecker
 import com.damn.anotherglass.extensions.notifications.filter.NotificationHistoryRepository
+import com.damn.anotherglass.shared.music.MusicAPI
 import com.damn.anotherglass.shared.notifications.NotificationData
 import com.damn.anotherglass.shared.notifications.NotificationData.DeliveryMode
 import com.damn.anotherglass.shared.notifications.NotificationsAPI
@@ -29,7 +30,7 @@ class NotificationExtension(private val service: GlassService) {
 
         // Filter out YouTube Music notifications when music extension is enabled
         if (settings.isMusicExtensionEnabled && 
-            "com.google.android.apps.youtube.music" == notificationData.packageName) {
+            MusicAPI.YOUTUBE_MUSIC_PACKAGE == notificationData.packageName) {
             return
         }
 

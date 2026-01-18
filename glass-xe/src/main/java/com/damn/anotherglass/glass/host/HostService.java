@@ -154,7 +154,7 @@ public class HostService extends Service {
                 mNotificationsCardController.onNotificationUpdate((NotificationData) data.payload);
             }
         } else if (MusicAPI.ID.equals(data.service)) {
-            if (data.payload instanceof MusicData) {
+            if (data.payload instanceof MusicData && mMusicCardController != null) {
                 mMusicCardController.update((MusicData) data.payload);
             }
         } else if (WiFiAPI.ID.equals(data.service)) {

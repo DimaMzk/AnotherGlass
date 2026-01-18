@@ -41,6 +41,7 @@ public class MusicMenuActivity extends Activity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         Intent intent = new Intent(ACTION_BROADCAST);
+        intent.setPackage(getPackageName());
         int id = item.getItemId();
         if (id == R.id.action_play_pause) {
             intent.putExtra(EXTRA_ACTION, isPlaying ? "Pause" : "Play");
