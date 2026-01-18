@@ -171,14 +171,20 @@ class MusicExtension(private val service: GlassService) {
                 lastSentArtForTrack = trackKey
                 thread {
                     try {
-                        // Send 128x128 JPEG at low quality
+                        // Send small 32x32 thumbnail first for instant feedback
+                        val smallStream = ByteArrayOutputStream()
+                        val smallScaled = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
+                        smallScaled.compress(Bitmap.CompressFormat.JPEG, 80, smallStream)
+                        val smallArtBytes = smallStream.toByteArray()
+                        service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, smallArtBytes, isPlaying, 0, 0)))
+                        
+                        // Then send full 128x128 image
                         val stream = ByteArrayOutputStream()
                         val scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true)
-                        scaled.compress(Bitmap.CompressFormat.JPEG, 60, stream)
+                        scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
                         val artBytes = stream.toByteArray()
-                        val artData = MusicData(null, null, artBytes, isPlaying, 0, 0)
-                        service.send(RPCMessage(MusicAPI.ID, artData))
-                        log.d(TAG).message("Sent album art: ${artBytes.size} bytes")
+                        service.send(RPCMessage(MusicAPI.ID, MusicData(null, null, artBytes, isPlaying, 0, 0)))
+                        log.d(TAG).message("Sent album art: ${smallArtBytes.size} + ${artBytes.size} bytes")
                     } catch (e: Exception) {
                         log.e(TAG).exception(e).message("Failed to send album art")
                     }
