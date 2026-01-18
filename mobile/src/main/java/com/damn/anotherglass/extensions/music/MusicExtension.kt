@@ -1,8 +1,8 @@
 package com.damn.anotherglass.extensions.music
 
 import android.content.ComponentName
-import android.content.Context
 import android.graphics.Bitmap
+import androidx.core.graphics.scale
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -73,7 +73,7 @@ class MusicExtension(private val service: GlassService) {
 
     fun start() {
         try {
-            mediaSessionManager = service.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
+            mediaSessionManager = service.getSystemService(MediaSessionManager::class.java)
             val componentName = ComponentName(service, NotificationService::class.java)
             
             if (NotificationService.isEnabled(service)) {
@@ -112,7 +112,7 @@ class MusicExtension(private val service: GlassService) {
     fun onMessage(payload: Any?) {
         if (payload is MusicControl) {
             val controller = currentController ?: return
-            val controls = controller.transportControls ?: return
+            val controls = controller.transportControls
             when (payload) {
                 MusicControl.Play -> controls.play()
                 MusicControl.Pause -> controls.pause()
@@ -159,7 +159,7 @@ class MusicExtension(private val service: GlassService) {
         // The position from playbackState is the position at lastPositionUpdateTime
         // We add elapsed time * playback speed to estimate current position
         var position = playbackState?.position ?: 0L
-        if (playing && playbackState != null) {
+        if (playbackState != null) {
             val timeDelta = SystemClock.elapsedRealtime() - playbackState.lastPositionUpdateTime
             val speed = playbackState.playbackSpeed
             position += (timeDelta * speed).toLong()
@@ -204,7 +204,7 @@ class MusicExtension(private val service: GlassService) {
                             var scaled: Bitmap? = null
                             try {
                                 // Send small 32x32 thumbnail first for instant feedback
-                                smallScaled = Bitmap.createScaledBitmap(albumArtBitmap, 32, 32, true)
+                                smallScaled = albumArtBitmap.scale(32, 32, true)
                                 ByteArrayOutputStream().use { smallStream ->
                                     smallScaled.compress(Bitmap.CompressFormat.JPEG, 80, smallStream)
                                     val smallArtBytes = smallStream.toByteArray()
@@ -216,7 +216,7 @@ class MusicExtension(private val service: GlassService) {
                                 }
                                 
                                 // Then send full 128x128 image
-                                scaled = Bitmap.createScaledBitmap(albumArtBitmap, 128, 128, true)
+                                scaled = albumArtBitmap.scale(128, 128, true)
                                 ByteArrayOutputStream().use { stream ->
                                     scaled.compress(Bitmap.CompressFormat.JPEG, 80, stream)
                                     val artBytes = stream.toByteArray()

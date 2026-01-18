@@ -3,13 +3,13 @@
     <item
         android:id="@+id/action_play_pause"
         android:icon="@android:drawable/ic_media_play"
-        android:title="Play/Pause" />
+        android:title="@string/action_play_pause" />
     <item
         android:id="@+id/action_next"
         android:icon="@android:drawable/ic_media_next"
-        android:title="Next" />
+        android:title="@string/action_next" />
     <item
         android:id="@+id/action_prev"
         android:icon="@android:drawable/ic_media_previous"
-        android:title="Previous" />
+        android:title="@string/action_previous" />
 </menu>
