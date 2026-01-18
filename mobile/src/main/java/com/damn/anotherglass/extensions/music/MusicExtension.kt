@@ -171,21 +171,14 @@ class MusicExtension(private val service: GlassService) {
                 lastSentArtForTrack = trackKey
                 thread {
                     try {
-                        // First: send small 32x32 thumbnail quickly
-                        val smallStream = ByteArrayOutputStream()
-                        val smallScaled = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
-                        smallScaled.compress(Bitmap.CompressFormat.PNG, 100, smallStream)
-                        val smallArtBytes = smallStream.toByteArray()
-                        val smallArtData = MusicData(null, null, smallArtBytes, isPlaying, 0, 0)
-                        service.send(RPCMessage(MusicAPI.ID, smallArtData))
-                        
-                        // Then: send larger 128x128 image
-                        val largeStream = ByteArrayOutputStream()
-                        val largeScaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true)
-                        largeScaled.compress(Bitmap.CompressFormat.PNG, 100, largeStream)
-                        val largeArtBytes = largeStream.toByteArray()
-                        val largeArtData = MusicData(null, null, largeArtBytes, isPlaying, 0, 0)
-                        service.send(RPCMessage(MusicAPI.ID, largeArtData))
+                        // Send 128x128 JPEG at low quality
+                        val stream = ByteArrayOutputStream()
+                        val scaled = Bitmap.createScaledBitmap(bitmap, 128, 128, true)
+                        scaled.compress(Bitmap.CompressFormat.JPEG, 60, stream)
+                        val artBytes = stream.toByteArray()
+                        val artData = MusicData(null, null, artBytes, isPlaying, 0, 0)
+                        service.send(RPCMessage(MusicAPI.ID, artData))
+                        log.d(TAG).message("Sent album art: ${artBytes.size} bytes")
                     } catch (e: Exception) {
                         log.e(TAG).exception(e).message("Failed to send album art")
                     }
