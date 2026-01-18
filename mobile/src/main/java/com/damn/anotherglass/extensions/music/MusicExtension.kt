@@ -29,11 +29,11 @@ class MusicExtension(private val service: GlassService) {
     private var isPlaying = false
     private var lastSentTrack: String? = null
 
-    private val progressRunnable = object : Runnable {
+    private val syncRunnable = object : Runnable {
         override fun run() {
             if (isPlaying && currentController != null) {
                 sendUpdate()
-                handler.postDelayed(this, PROGRESS_UPDATE_INTERVAL)
+                handler.postDelayed(this, SYNC_INTERVAL)
             }
         }
     }
@@ -49,10 +49,10 @@ class MusicExtension(private val service: GlassService) {
             sendUpdate()
             
             if (isPlaying && !wasPlaying) {
-                handler.removeCallbacks(progressRunnable)
-                handler.postDelayed(progressRunnable, PROGRESS_UPDATE_INTERVAL)
+                handler.removeCallbacks(syncRunnable)
+                handler.postDelayed(syncRunnable, SYNC_INTERVAL)
             } else if (!isPlaying) {
-                handler.removeCallbacks(progressRunnable)
+                handler.removeCallbacks(syncRunnable)
             }
         }
 
@@ -61,7 +61,7 @@ class MusicExtension(private val service: GlassService) {
         }
 
         override fun onSessionDestroyed() {
-            handler.removeCallbacks(progressRunnable)
+            handler.removeCallbacks(syncRunnable)
             currentController = null
             isPlaying = false
         }
@@ -90,7 +90,7 @@ class MusicExtension(private val service: GlassService) {
 
     fun stop() {
         try {
-            handler.removeCallbacks(progressRunnable)
+            handler.removeCallbacks(syncRunnable)
             mediaSessionManager?.removeOnActiveSessionsChangedListener(sessionsListener)
             currentController?.unregisterCallback(callback)
             currentController = null
@@ -191,6 +191,6 @@ class MusicExtension(private val service: GlassService) {
 
     companion object {
         private const val TAG = "MusicExtension"
-        private const val PROGRESS_UPDATE_INTERVAL = 1000L // 1 second
+        private const val SYNC_INTERVAL = 5000L // 5 seconds
     }
 }

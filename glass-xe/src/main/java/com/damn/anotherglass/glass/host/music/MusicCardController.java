@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.RemoteViews;
 
 import com.damn.anotherglass.glass.host.HostService;
@@ -21,11 +23,26 @@ import com.google.android.glass.timeline.LiveCard;
 public class MusicCardController extends BroadcastReceiver {
 
     private static final String CARD_TAG = "MusicCard";
+    private static final long UI_UPDATE_INTERVAL = 1000L;
+    
     private final HostService service;
     private final IRPCClient rpcClient;
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private LiveCard liveCard;
     private MusicData lastData;
     private Bitmap cachedArt;
+    private long syncedPosition;
+    private long syncedTimestamp;
+    
+    private final Runnable progressRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (lastData != null && lastData.isPlaying) {
+                refreshCard();
+                handler.postDelayed(this, UI_UPDATE_INTERVAL);
+            }
+        }
+    };
 
     public MusicCardController(HostService service, IRPCClient rpcClient) {
         this.service = service;
@@ -44,7 +61,12 @@ public class MusicCardController extends BroadcastReceiver {
             return;
         }
 
+        boolean wasPlaying = lastData != null && lastData.isPlaying;
         this.lastData = data;
+        
+        // Sync position from server
+        syncedPosition = data.position;
+        syncedTimestamp = data.timestamp;
         
         // Update cached art if included
         if (data.albumArt != null && data.albumArt.length > 0) {
@@ -52,6 +74,14 @@ public class MusicCardController extends BroadcastReceiver {
         }
         
         refreshCard();
+        
+        // Start/stop local progress timer based on playback state
+        if (data.isPlaying && !wasPlaying) {
+            handler.removeCallbacks(progressRunnable);
+            handler.postDelayed(progressRunnable, UI_UPDATE_INTERVAL);
+        } else if (!data.isPlaying) {
+            handler.removeCallbacks(progressRunnable);
+        }
     }
 
     private void refreshCard() {
@@ -76,9 +106,14 @@ public class MusicCardController extends BroadcastReceiver {
         String artistText = lastData.artist != null ? lastData.artist : "Unknown Artist";
         views.setTextViewText(R.id.artist, artistText);
         
-        // Set progress
+        // Set progress (calculate current position locally)
         if (lastData.duration > 0) {
-            String progress = formatTime(lastData.position) + " / " + formatTime(lastData.duration);
+            long currentPosition = syncedPosition;
+            if (lastData.isPlaying && syncedTimestamp > 0) {
+                currentPosition += System.currentTimeMillis() - syncedTimestamp;
+            }
+            currentPosition = Math.min(currentPosition, lastData.duration);
+            String progress = formatTime(currentPosition) + " / " + formatTime(lastData.duration);
             views.setTextViewText(R.id.progress, progress);
         } else {
             views.setTextViewText(R.id.progress, "");
@@ -104,6 +139,7 @@ public class MusicCardController extends BroadcastReceiver {
     }
 
     public void remove() {
+        handler.removeCallbacks(progressRunnable);
         try {
             service.unregisterReceiver(this);
         } catch (IllegalArgumentException e) {

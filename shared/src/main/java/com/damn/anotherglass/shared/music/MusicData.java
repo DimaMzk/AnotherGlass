@@ -11,6 +11,7 @@ public class MusicData implements Serializable {
     public boolean isPlaying;
     public long position;   // Current position in ms
     public long duration;   // Total duration in ms
+    public long timestamp;  // System.currentTimeMillis() when position was captured
 
     public MusicData() {
     }
@@ -22,5 +23,6 @@ public class MusicData implements Serializable {
         this.isPlaying = isPlaying;
         this.position = position;
         this.duration = duration;
+        this.timestamp = System.currentTimeMillis();
     }
 }
