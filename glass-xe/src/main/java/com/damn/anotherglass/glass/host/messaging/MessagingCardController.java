@@ -206,8 +206,7 @@ public class MessagingCardController {
         listIntent.putExtra(MessagingListActivity.EXTRA_PACKAGE_NAME, packageName);
         listIntent.putExtra(MessagingListActivity.EXTRA_APP_NAME, latestData.appName);
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                service, packageName.hashCode(), listIntent, 
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                service, packageName.hashCode(), listIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         card.setAction(pendingIntent);
 
         if (!card.isPublished()) {
