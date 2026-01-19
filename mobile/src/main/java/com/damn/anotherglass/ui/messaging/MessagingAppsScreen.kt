@@ -2,7 +2,6 @@ package com.damn.anotherglass.ui.messaging
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -129,7 +128,7 @@ fun MessagingAppsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Messaging Apps") },
+                title = { Text(stringResource(R.string.messaging_apps_title)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -169,7 +168,7 @@ fun MessagingAppsScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No messaging apps configured.\nTap + to add apps.",
+                    text = stringResource(R.string.messaging_apps_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

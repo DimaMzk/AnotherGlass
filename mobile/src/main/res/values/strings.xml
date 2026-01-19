@@ -35,4 +35,9 @@
     <string name="lbl_no_filters_defined">No filters defined yet.\nClick the \'+\' button to add one.</string>
     <string name="title_create_filter">Create Filter</string>
     <string name="title_edit_filter">Edit Filter</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_music_extension">Music Control</string>
+    <string name="settings_messaging">Messaging</string>
+    <string name="messaging_apps_title">Messaging Apps</string>
+    <string name="messaging_apps_empty">No messaging apps configured.\nTap + to add apps.</string>
 </resources>

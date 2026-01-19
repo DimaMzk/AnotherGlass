@@ -37,7 +37,7 @@ class NotificationExtension(private val service: GlassService) {
 
         // Filter out messaging app notifications when messaging extension is enabled
         if (settings.isMessagingExtensionEnabled &&
-            MessagingAPI.isMessagingApp(notificationData.packageName)) {
+            settings.messagingAppPackages.contains(notificationData.packageName)) {
             return
         }
 

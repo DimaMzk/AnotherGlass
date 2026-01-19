@@ -23,6 +23,7 @@ import org.greenrobot.eventbus.ThreadMode
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 
 class MessagingExtension(private val service: GlassService) {
 
@@ -47,17 +48,24 @@ class MessagingExtension(private val service: GlassService) {
             NotificationData.Action.Removed -> MessagingData.Action.Removed
         }
 
-        val data = convertToMessagingData(action, sbn)
-        
-        // Send message data immediately (without large sender image)
-        service.send(RPCMessage(MessagingAPI.ID, data))
+        // Process notification in background to avoid blocking main thread
+        imageExecutor.submit {
+            try {
+                val data = convertToMessagingData(action, sbn)
+                
+                // Send message data immediately (without large sender image)
+                service.send(RPCMessage(MessagingAPI.ID, data))
 
-        // Send progressive sender images asynchronously
-        if (action == MessagingData.Action.Posted) {
-            sendProgressiveImages(sbn, data.id, data.packageName)
+                // Send progressive sender images asynchronously
+                if (action == MessagingData.Action.Posted) {
+                    sendProgressiveImages(sbn, data.id, data.packageName)
+                }
+
+                log.d(TAG).message("Messaging notification processed: ${data.appName} - ${data.senderName}")
+            } catch (e: Exception) {
+                log.e(TAG).exception(e).message("Failed to process messaging notification")
+            }
         }
-
-        log.d(TAG).message("Messaging notification processed: ${data.appName} - ${data.senderName}")
     }
 
     private fun convertToMessagingData(action: MessagingData.Action, sbn: StatusBarNotification): MessagingData {
@@ -77,11 +85,11 @@ class MessagingExtension(private val service: GlassService) {
         data.senderName = extras.getString(Notification.EXTRA_TITLE) ?: "Unknown"
         data.messageText = extras.getString(Notification.EXTRA_TEXT) ?: ""
 
-        // Get cached or extract app icon (16x16)
+        // Get cached or extract app icon (small)
         data.appIcon = getAppIcon(sbn.packageName)
 
-        // Get small sender image for immediate display (16x16)
-        data.senderImage = extractSenderImage(notification, 16)
+        // Get small sender image for immediate display
+        data.senderImage = extractSenderImage(notification, SMALL_IMAGE_SIZE)
 
         return data
     }
@@ -162,8 +170,8 @@ class MessagingExtension(private val service: GlassService) {
         pendingImageUpdate?.cancel(true)
         pendingImageUpdate = imageExecutor.submit {
             try {
-                // Send larger 128x128 sender image
-                val largeImage = extractSenderImage(sbn.notification, 128)
+                // Send larger sender image
+                val largeImage = extractSenderImage(sbn.notification, LARGE_IMAGE_SIZE)
                 if (largeImage != null) {
                     val imageUpdate = MessagingData()
                     imageUpdate.action = MessagingData.Action.Posted
@@ -206,12 +214,22 @@ class MessagingExtension(private val service: GlassService) {
             EventBus.getDefault().unregister(this)
         }
         pendingImageUpdate?.cancel(true)
-        imageExecutor.shutdownNow()
+        imageExecutor.shutdown()
+        try {
+            if (!imageExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+                imageExecutor.shutdownNow()
+            }
+        } catch (e: InterruptedException) {
+            imageExecutor.shutdownNow()
+            Thread.currentThread().interrupt()
+        }
         appIconCache.clear()
         log.i(TAG).message("MessagingExtension stopped")
     }
 
     companion object {
         private const val TAG = "MessagingExtension"
+        private const val SMALL_IMAGE_SIZE = 16
+        private const val LARGE_IMAGE_SIZE = 128
     }
 }

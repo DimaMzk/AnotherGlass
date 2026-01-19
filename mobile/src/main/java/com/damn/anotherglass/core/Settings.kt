@@ -2,6 +2,7 @@ package com.damn.anotherglass.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.damn.anotherglass.shared.messaging.MessagingAPI
 import androidx.core.content.edit
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
@@ -79,9 +80,9 @@ class Settings(context: Context) {
 
         // Default messaging apps
         private val defaultMessagingPackages = setOf(
-            "com.google.android.apps.messaging",
-            "com.discord",
-            "com.Slack"
+            MessagingAPI.GOOGLE_MESSAGES_PACKAGE,
+            MessagingAPI.DISCORD_PACKAGE,
+            MessagingAPI.SLACK_PACKAGE
         )
     }
 }

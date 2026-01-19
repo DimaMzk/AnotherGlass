@@ -4,6 +4,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.text.format.DateUtils;
 import android.widget.RemoteViews;
 
@@ -12,11 +13,13 @@ import com.damn.anotherglass.glass.host.R;
 import com.damn.anotherglass.shared.messaging.MessagingData;
 import com.google.android.glass.timeline.LiveCard;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Controller for messaging notification cards.
@@ -66,10 +69,16 @@ public class MessagingCardController {
     private void handlePosted(MessagingData data) {
         String packageName = data.packageName;
 
-        // Ensure we have storage for this app
-        if (!appNotifications.containsKey(packageName)) {
-            appNotifications.put(packageName, new ArrayList<MessagingData>());
-            appSenderImages.put(packageName, new HashMap<Integer, Bitmap>());
+        // Ensure we have storage for this app (thread-safe for Java 8)
+        synchronized (appNotifications) {
+            if (!appNotifications.containsKey(packageName)) {
+                appNotifications.put(packageName, new CopyOnWriteArrayList<MessagingData>());
+            }
+        }
+        synchronized (appSenderImages) {
+            if (!appSenderImages.containsKey(packageName)) {
+                appSenderImages.put(packageName, new ConcurrentHashMap<Integer, Bitmap>());
+            }
         }
 
         List<MessagingData> notifications = appNotifications.get(packageName);
@@ -204,7 +213,10 @@ public class MessagingCardController {
         // Set action to open list of all notifications for this app
         Intent listIntent = new Intent(service, MessagingListActivity.class);
         listIntent.putExtra(MessagingListActivity.EXTRA_PACKAGE_NAME, packageName);
-        listIntent.putExtra(MessagingListActivity.EXTRA_APP_NAME, latestData.appName);
+        if (latestData.appName != null) {
+            listIntent.putExtra(MessagingListActivity.EXTRA_APP_NAME, latestData.appName);
+        }
+        // Use FLAG_UPDATE_CURRENT (FLAG_IMMUTABLE requires API 31+)
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 service, packageName.hashCode(), listIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         card.setAction(pendingIntent);
@@ -289,13 +301,13 @@ public class MessagingCardController {
     }
 
     // Singleton for access from MessagingListActivity
-    private static MessagingCardController instance;
+    private static WeakReference<MessagingCardController> instanceRef;
 
     public static void setInstance(MessagingCardController controller) {
-        instance = controller;
+        instanceRef = new WeakReference<>(controller);
     }
 
     public static MessagingCardController getInstance() {
-        return instance;
+        return instanceRef != null ? instanceRef.get() : null;
     }
 }
