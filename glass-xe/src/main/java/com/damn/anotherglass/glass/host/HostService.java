@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.damn.anotherglass.glass.host.bluetooth.BluetoothClient;
+import com.damn.anotherglass.glass.host.messaging.MessagingCardController;
 import com.damn.anotherglass.glass.host.music.MusicCardController;
 import com.damn.anotherglass.shared.rpc.IRPCClient;
 import com.damn.glass.shared.gps.MockGPS;
@@ -25,6 +26,8 @@ import com.damn.anotherglass.shared.rpc.RPCMessage;
 import com.damn.anotherglass.shared.rpc.RPCMessageListener;
 import com.damn.anotherglass.shared.gps.GPSServiceAPI;
 import com.damn.anotherglass.shared.gps.Location;
+import com.damn.anotherglass.shared.messaging.MessagingAPI;
+import com.damn.anotherglass.shared.messaging.MessagingData;
 import com.damn.anotherglass.shared.music.MusicAPI;
 import com.damn.anotherglass.shared.music.MusicData;
 import com.damn.anotherglass.shared.notifications.NotificationData;
@@ -56,6 +59,8 @@ public class HostService extends Service {
     private NotificationsCardController mNotificationsCardController;
 
     private MusicCardController mMusicCardController;
+
+    private MessagingCardController mMessagingCardController;
 
     private BatteryStatus mBatteryStatus;
 
@@ -101,6 +106,8 @@ public class HostService extends Service {
 
             mRPCClient = new BluetoothClient();
             mMusicCardController = new MusicCardController(this, mRPCClient);
+            mMessagingCardController = new MessagingCardController(this);
+            MessagingCardController.setInstance(mMessagingCardController);
             mRPCClient.start(this, new RPCMessageListener() {
 
                 @Override
@@ -157,6 +164,10 @@ public class HostService extends Service {
             if (data.payload instanceof MusicData && mMusicCardController != null) {
                 mMusicCardController.update((MusicData) data.payload);
             }
+        } else if (MessagingAPI.ID.equals(data.service)) {
+            if (data.payload instanceof MessagingData && mMessagingCardController != null) {
+                mMessagingCardController.update((MessagingData) data.payload);
+            }
         } else if (WiFiAPI.ID.equals(data.service)) {
             if (data.type.equals(WiFiConfiguration.class.getName()))
                 WiFiActivity.start(this, (WiFiConfiguration) data.payload);
@@ -186,6 +197,11 @@ public class HostService extends Service {
         if (mMusicCardController != null) {
             mMusicCardController.remove();
             mMusicCardController = null;
+        }
+        if (mMessagingCardController != null) {
+            mMessagingCardController.remove();
+            mMessagingCardController = null;
+            MessagingCardController.setInstance(null);
         }
         mGPS.remove();
         if(null != mCardProvider) {

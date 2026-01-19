@@ -53,6 +53,10 @@ class Settings(context: Context) {
         get() = preferences.getBoolean(MUSIC_EXTENSION_ENABLED, false)
         set(enabled) = preferences.edit { putBoolean(MUSIC_EXTENSION_ENABLED, enabled) }
 
+    var isMessagingExtensionEnabled: Boolean
+        get() = preferences.getBoolean(MESSAGING_EXTENSION_ENABLED, false)
+        set(enabled) = preferences.edit { putBoolean(MESSAGING_EXTENSION_ENABLED, enabled) }
+
     var hostMode: HostMode
         get() = preferences.getString(HOST_MODE, HostMode.WiFi.value)?.let { mode ->
             HostMode.entries.firstOrNull { mode == it.value }
@@ -64,6 +68,7 @@ class Settings(context: Context) {
         const val GPS_ENABLED = "gps_enabled"
         const val NOTIFICATIONS_ENABLED = "notifications_enabled"
         const val MUSIC_EXTENSION_ENABLED = "music_extension_enabled"
+        const val MESSAGING_EXTENSION_ENABLED = "messaging_extension_enabled"
         const val HOST_MODE = "host_mode"
     }
 }

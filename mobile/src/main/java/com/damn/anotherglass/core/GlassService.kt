@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import com.applicaster.xray.core.Logger
 import com.damn.anotherglass.R
 import com.damn.anotherglass.extensions.GPSExtension
+import com.damn.anotherglass.extensions.messaging.MessagingExtension
 import com.damn.anotherglass.extensions.music.MusicExtension
 import com.damn.anotherglass.extensions.notifications.NotificationExtension
 import com.damn.anotherglass.logging.ALog
@@ -55,6 +56,7 @@ class GlassService
     private lateinit var mGPS: GPSExtension
     private lateinit var mNotifications: NotificationExtension
     private lateinit var mMusic: MusicExtension
+    private lateinit var mMessaging: MessagingExtension
 
     // connected device info
     private val mDeviceName = MutableStateFlow("")
@@ -96,6 +98,7 @@ class GlassService
                 if (mSettings.isGPSEnabled) mGPS.start()
                 if (mSettings.isNotificationsEnabled) mNotifications.start()
                 if (mSettings.isMusicExtensionEnabled) mMusic.start()
+                if (mSettings.isMessagingExtensionEnabled) mMessaging.start()
             }
 
             override fun onDataReceived(data: RPCMessage) {
@@ -117,6 +120,7 @@ class GlassService
                 mGPS.stop()
                 mNotifications.stop()
                 mMusic.stop()
+                mMessaging.stop()
                 mConnectedDevice.value = null
             }
 
@@ -136,6 +140,7 @@ class GlassService
         mNotifications = NotificationExtension(this)
         mGPS = GPSExtension(this)
         mMusic = MusicExtension(this)
+        mMessaging = MessagingExtension(this)
 
         val useWifi = Settings.HostMode.WiFi == mSettings.hostMode
         mHost = if (useWifi) WiFiHost(rpcMessageListener) else BluetoothHost(rpcMessageListener)
@@ -164,6 +169,7 @@ class GlassService
         mGPS.stop()
         mNotifications.stop()
         mMusic.stop()
+        mMessaging.stop()
         mHost.stop()
         mConnectedDevice.value = null
         super.onDestroy()

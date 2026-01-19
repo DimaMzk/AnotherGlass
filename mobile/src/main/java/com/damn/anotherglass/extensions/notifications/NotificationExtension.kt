@@ -6,6 +6,7 @@ import com.damn.anotherglass.core.Settings
 import com.damn.anotherglass.extensions.notifications.filter.FilterAction
 import com.damn.anotherglass.extensions.notifications.filter.NotificationFilterChecker
 import com.damn.anotherglass.extensions.notifications.filter.NotificationHistoryRepository
+import com.damn.anotherglass.shared.messaging.MessagingAPI
 import com.damn.anotherglass.shared.music.MusicAPI
 import com.damn.anotherglass.shared.notifications.NotificationData
 import com.damn.anotherglass.shared.notifications.NotificationData.DeliveryMode
@@ -31,6 +32,12 @@ class NotificationExtension(private val service: GlassService) {
         // Filter out YouTube Music notifications when music extension is enabled
         if (settings.isMusicExtensionEnabled && 
             MusicAPI.YOUTUBE_MUSIC_PACKAGE == notificationData.packageName) {
+            return
+        }
+
+        // Filter out messaging app notifications when messaging extension is enabled
+        if (settings.isMessagingExtensionEnabled &&
+            MessagingAPI.isMessagingApp(notificationData.packageName)) {
             return
         }
 
