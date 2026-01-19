@@ -38,7 +38,7 @@ class MessagingExtension(private val service: GlassService) {
         val sbn = event.notification
         val packageName = sbn.packageName
 
-        if (!MessagingAPI.isMessagingApp(packageName)) {
+        if (!service.settings.messagingAppPackages.contains(packageName)) {
             return
         }
 

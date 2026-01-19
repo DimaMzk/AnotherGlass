@@ -94,6 +94,9 @@ fun MainScreen(
                         },
                         DropDownMenuItem("Notification filters") {
                             navController?.navigate(AppRoute.FilterList.route)
+                        },
+                        DropDownMenuItem("Messaging apps") {
+                            navController?.navigate(AppRoute.MessagingApps.route)
                         }
                     ))
                 }

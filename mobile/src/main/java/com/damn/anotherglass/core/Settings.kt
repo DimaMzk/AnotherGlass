@@ -57,6 +57,11 @@ class Settings(context: Context) {
         get() = preferences.getBoolean(MESSAGING_EXTENSION_ENABLED, false)
         set(enabled) = preferences.edit { putBoolean(MESSAGING_EXTENSION_ENABLED, enabled) }
 
+    var messagingAppPackages: Set<String>
+        get() = preferences.getStringSet(MESSAGING_APP_PACKAGES, defaultMessagingPackages)
+            ?: defaultMessagingPackages
+        set(packages) = preferences.edit { putStringSet(MESSAGING_APP_PACKAGES, packages) }
+
     var hostMode: HostMode
         get() = preferences.getString(HOST_MODE, HostMode.WiFi.value)?.let { mode ->
             HostMode.entries.firstOrNull { mode == it.value }
@@ -69,6 +74,14 @@ class Settings(context: Context) {
         const val NOTIFICATIONS_ENABLED = "notifications_enabled"
         const val MUSIC_EXTENSION_ENABLED = "music_extension_enabled"
         const val MESSAGING_EXTENSION_ENABLED = "messaging_extension_enabled"
+        const val MESSAGING_APP_PACKAGES = "messaging_app_packages"
         const val HOST_MODE = "host_mode"
+
+        // Default messaging apps
+        private val defaultMessagingPackages = setOf(
+            "com.google.android.apps.messaging",
+            "com.discord",
+            "com.Slack"
+        )
     }
 }
