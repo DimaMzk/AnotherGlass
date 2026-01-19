@@ -66,6 +66,7 @@ fun MainScreen(
     val isServiceRunning by settings.isServiceRunning.observeAsState(false)
     val hostMode by settings.hostMode.observeAsState()
     val isMusicExtensionEnabled by settings.isMusicExtensionEnabled.observeAsState(true)
+    val isMessagingExtensionEnabled by settings.isMessagingExtensionEnabled.observeAsState(true)
 
     // Use function to make sure it won't build if enum is updated
     @DrawableRes
@@ -93,6 +94,9 @@ fun MainScreen(
                         },
                         DropDownMenuItem("Notification filters") {
                             navController?.navigate(AppRoute.FilterList.route)
+                        },
+                        DropDownMenuItem("Messaging apps") {
+                            navController?.navigate(AppRoute.MessagingApps.route)
                         }
                     ))
                 }
@@ -138,6 +142,13 @@ fun MainScreen(
                 label = stringResource(id = R.string.lbl_enable_music_extension),
                 checked = isMusicExtensionEnabled,
                 onCheckedChange = { settings.setMusicExtensionEnabled(it) },
+                enabled = !isServiceRunning)
+
+            // Messaging Extension Toggle (disabled when service is running)
+            SwitchRow(
+                label = stringResource(id = R.string.lbl_enable_messaging_extension),
+                checked = isMessagingExtensionEnabled,
+                onCheckedChange = { settings.setMessagingExtensionEnabled(it) },
                 enabled = !isServiceRunning)
 
             // Service Toggle
@@ -297,6 +308,7 @@ fun DefaultPreview() {
                 override fun setGPSEnabled(enabled: Boolean) = Unit
                 override fun setNotificationsEnabled(enabled: Boolean) = Unit
                 override fun setMusicExtensionEnabled(enabled: Boolean) = Unit
+                override fun setMessagingExtensionEnabled(enabled: Boolean) = Unit
             },
             object : IServiceController {
                 override val connectedDevice: StateFlow<ConnectedDevice?>

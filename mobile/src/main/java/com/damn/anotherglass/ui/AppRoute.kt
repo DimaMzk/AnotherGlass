@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.damn.anotherglass.extensions.notifications.filter.IImportExportController
 import com.damn.anotherglass.ui.mainscreen.MainScreen
 import com.damn.anotherglass.ui.mainscreen.ServiceController
+import com.damn.anotherglass.ui.messaging.MessagingAppsScreen
 import com.damn.anotherglass.ui.notifications.editfilter.FilterEditScreen
 import com.damn.anotherglass.ui.notifications.editfilter.FilterEditViewModel
 import com.damn.anotherglass.ui.notifications.editfilter.FilterEditViewModel.Companion.urlEncode
@@ -27,6 +28,7 @@ sealed class AppRoute(val route: String) {
     data object MainScreen : AppRoute("main_screen")
     data object FilterList : AppRoute("filter_list")
     data object NotificationHistory : AppRoute("notification_history")
+    data object MessagingApps : AppRoute("messaging_apps")
     data object FilterEditScreen : AppRoute("filter_edit_screen") {
 
         const val FILTER_EDIT_ARG_TITLE = "title"
@@ -141,6 +143,15 @@ fun navGraph(
                 viewModel = viewModel,
                 importExportController = importExportController
             )
+        }
+        composable(
+            route = AppRoute.MessagingApps.route,
+            enterTransition = { enterTransition },
+            exitTransition = { exitTransition },
+            popEnterTransition = { popEnterTransition },
+            popExitTransition = { popExitTransition }
+        ) {
+            MessagingAppsScreen(navController = navController)
         }
         composable(
             route = AppRoute.FilterEditScreen.routeTemplate,

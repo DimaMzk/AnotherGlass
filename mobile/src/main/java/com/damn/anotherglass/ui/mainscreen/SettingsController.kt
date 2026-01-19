@@ -10,10 +10,12 @@ abstract class SettingsController {
     open val notificationsEnabled: LiveData<Boolean> = MutableLiveData(true)
     open val isGPSEnabled: LiveData<Boolean> = MutableLiveData(true)
     open val isMusicExtensionEnabled: LiveData<Boolean> = MutableLiveData(true)
+    open val isMessagingExtensionEnabled: LiveData<Boolean> = MutableLiveData(true)
 
     abstract fun setServiceRunning(checked: Boolean)
     abstract fun setHostMode(mode: Settings.HostMode)
     abstract fun setGPSEnabled(enabled: Boolean)
     abstract fun setNotificationsEnabled(enabled: Boolean)
     abstract fun setMusicExtensionEnabled(enabled: Boolean)
+    abstract fun setMessagingExtensionEnabled(enabled: Boolean)
 }

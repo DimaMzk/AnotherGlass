@@ -56,6 +56,10 @@
         <activity
             android:name=".music.MusicMenuActivity"
             android:theme="@style/MenuTheme" />
+        <activity
+            android:name=".messaging.MessagingListActivity"
+            android:icon="@drawable/ic_glass_logo"
+            android:label="@string/title_activity_messaging" />
     </application>
 
 </manifest>

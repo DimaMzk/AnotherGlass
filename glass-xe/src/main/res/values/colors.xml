@@ -5,4 +5,12 @@
     <color name="music_card_title">#FFFFFF</color>
     <color name="music_card_artist">#AAAAAA</color>
     <color name="music_card_progress">#888888</color>
+
+    <!-- Messaging card colors -->
+    <color name="messaging_card_background">#000000</color>
+    <color name="messaging_card_app_name">#888888</color>
+    <color name="messaging_card_sender_image_bg">#222222</color>
+    <color name="messaging_card_sender_name">#FFFFFF</color>
+    <color name="messaging_card_message_text">#AAAAAA</color>
+    <color name="messaging_card_timestamp">#888888</color>
 </resources>
