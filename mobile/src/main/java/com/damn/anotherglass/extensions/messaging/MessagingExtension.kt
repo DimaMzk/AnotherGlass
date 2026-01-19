@@ -206,6 +206,7 @@ class MessagingExtension(private val service: GlassService) {
             EventBus.getDefault().unregister(this)
         }
         pendingImageUpdate?.cancel(true)
+        imageExecutor.shutdownNow()
         appIconCache.clear()
         log.i(TAG).message("MessagingExtension stopped")
     }

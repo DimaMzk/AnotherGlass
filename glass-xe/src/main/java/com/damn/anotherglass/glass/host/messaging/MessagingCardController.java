@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Controller for messaging notification cards.
@@ -29,16 +30,16 @@ public class MessagingCardController {
     private final HostService service;
 
     // Per-app live cards
-    private final Map<String, LiveCard> appCards = new HashMap<>();
+    private final Map<String, LiveCard> appCards = new ConcurrentHashMap<>();
 
     // Per-app notifications (ordered by time, newest first)
-    private final Map<String, List<MessagingData>> appNotifications = new HashMap<>();
+    private final Map<String, List<MessagingData>> appNotifications = new ConcurrentHashMap<>();
 
     // Cached sender images per notification ID within each app
-    private final Map<String, Map<Integer, Bitmap>> appSenderImages = new HashMap<>();
+    private final Map<String, Map<Integer, Bitmap>> appSenderImages = new ConcurrentHashMap<>();
 
     // Cached app icons per package
-    private final Map<String, Bitmap> appIcons = new HashMap<>();
+    private final Map<String, Bitmap> appIcons = new ConcurrentHashMap<>();
 
     public MessagingCardController(HostService service) {
         this.service = service;
@@ -72,6 +73,7 @@ public class MessagingCardController {
         }
 
         List<MessagingData> notifications = appNotifications.get(packageName);
+        if (notifications == null) return; // defensive check
 
         // Remove existing notification with same ID (update)
         for (int i = 0; i < notifications.size(); i++) {
@@ -204,7 +206,8 @@ public class MessagingCardController {
         listIntent.putExtra(MessagingListActivity.EXTRA_PACKAGE_NAME, packageName);
         listIntent.putExtra(MessagingListActivity.EXTRA_APP_NAME, latestData.appName);
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                service, packageName.hashCode(), listIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+                service, packageName.hashCode(), listIntent, 
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         card.setAction(pendingIntent);
 
         if (!card.isPublished()) {

@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.damn.anotherglass.glass.host.R;
 import com.damn.anotherglass.shared.messaging.MessagingData;
@@ -43,18 +44,21 @@ public class MessagingListActivity extends Activity {
         String appName = getIntent().getStringExtra(EXTRA_APP_NAME);
 
         if (packageName == null) {
+            Toast.makeText(this, "Missing package info", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         MessagingCardController controller = MessagingCardController.getInstance();
         if (controller == null) {
+            Toast.makeText(this, "Service not running", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
         List<MessagingData> notifications = controller.getNotificationsForApp(packageName);
         if (notifications.isEmpty()) {
+            Toast.makeText(this, "No messages", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
